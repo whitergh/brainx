@@ -31,6 +31,9 @@ from matplotlib import pyplot as plt
 # Our own modules
 from . import util
 
+# Local build of infomap 
+from infomap import infomap
+
 
 #-----------------------------------------------------------------------------
 # Class declarations
@@ -1471,3 +1474,53 @@ def adjust_partition(g, partition, max_iter=None):
             no_improvement += 1
 
     return gp_best
+
+
+def infomap_partition(g):
+    """Estimation of optimal partition of a graph, using Infomap method. 
+    From "Maps of information flow reveal community structure in complex networks"
+    Martin Rosvall and Carl T. Bergstrom ,PNAS 105, 1118 (2008) [arXiv:0707.0609]
+
+    Requires infomap python module compiled from binary using code available at
+    http://www.mapequation.org/code.html
+
+    For the time being, this only implements the "two-level" algorithm with 
+    default parameters.
+
+    Parameters
+    ----------
+    g : NetworkX Graph
+        Input graph.
+
+    Returns
+    -------
+    p : GraphPartition
+        Estimated optimal partitioning.
+    """
+    conf = infomap.init("--two-level");
+    # Input data
+    network = infomap.Network(conf);
+    # Output data
+    tree = infomap.HierarchicalNetwork(conf)
+
+    print "Building network for Infomap..."
+    for e in g.edges_iter():
+            network.addLink(*e)
+
+    network.finalizeAndCheckNetwork(True, nx.number_of_nodes(g));
+
+    # Cluster network
+    infomap.run(network, tree);
+    codelength = tree.codelength()
+    print "Codelength:", codelength
+
+    # Now build dict of sets for BrainX GraphPartition
+    communities = {}
+    for leaf in tree.leafIter():
+        if communities.has_key(leaf.parentNode.parentIndex):
+            communities[leaf.parentNode.parentIndex].add(leaf.originalLeafIndex)
+        else:
+            communities[leaf.parentNode.parentIndex] = set([leaf.originalLeafIndex])
+
+    return GraphPartition(g,communities)
+
