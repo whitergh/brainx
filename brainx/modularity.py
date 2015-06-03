@@ -31,10 +31,13 @@ from matplotlib import pyplot as plt
 # Our own modules
 from . import util
 
+<<<<<<< HEAD
+=======
 # Local build of infomap 
 from infomap import infomap
 
 
+>>>>>>> master
 #-----------------------------------------------------------------------------
 # Class declarations
 #-----------------------------------------------------------------------------
@@ -1476,6 +1479,15 @@ def adjust_partition(g, partition, max_iter=None):
     return gp_best
 
 
+<<<<<<< HEAD
+def _get_infomap():
+    try:
+        import infomap
+        return infomap
+    except ImportError:
+        return None
+
+
 def infomap_partition(g):
     """Estimation of optimal partition of a graph, using Infomap method. 
     From "Maps of information flow reveal community structure in complex networks"
@@ -1497,6 +1509,35 @@ def infomap_partition(g):
     p : GraphPartition
         Estimated optimal partitioning.
     """
+
+    infomap = _get_infomap()
+
+    if not infomap:
+        raise ImportError("""
+
+    Cannot import infomap, please install from:
+
+    http://www.mapequation.org/code.html
+
+    1. Check out https://bitbucket.org/mapequation/infomap
+    2. In the root:
+
+       - make python
+       - cd build/py && python setup.py install
+
+    """)
+
+    conf = infomap.init("--two-level")
+    # Input data
+    network = infomap.Network(conf)
+    # Output data
+    tree = infomap.HierarchicalNetwork(conf)
+
+    print("Building network for Infomap...")
+    for e in g.edges_iter():
+        network.addLink(*(int(x) for x in e))
+
+    network.finalizeAndCheckNetwork(True, nx.number_of_nodes(g))
     conf = infomap.init("--two-level");
     # Input data
     network = infomap.Network(conf);
@@ -1512,7 +1553,7 @@ def infomap_partition(g):
     # Cluster network
     infomap.run(network, tree);
     codelength = tree.codelength()
-    print "Codelength:", codelength
+    print("Codelength:", codelength)
 
     # Now build dict of sets for BrainX GraphPartition
     communities = {}
@@ -1520,7 +1561,8 @@ def infomap_partition(g):
         if communities.has_key(leaf.parentNode.parentIndex):
             communities[leaf.parentNode.parentIndex].add(leaf.originalLeafIndex)
         else:
-            communities[leaf.parentNode.parentIndex] = set([leaf.originalLeafIndex])
+            communities[leaf.parentNode.parentIndex] = \
+              set([leaf.originalLeafIndex])
 
-    return GraphPartition(g,communities)
+    return GraphPartition(g, communities)
 
